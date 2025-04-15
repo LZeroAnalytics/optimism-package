@@ -183,3 +183,7 @@ def configure_op_service_rpc(cmd, port_num):
     cmd.append("--rpc.addr=0.0.0.0")
     cmd.append("--rpc.port={0}".format(port_num))
     cmd.append("--rpc.enable-admin")
+
+# Removes all None values from a dictionary and returns a new dictionary.
+def filter_none(d):
+    return {k: v for k, v in d.items() if v != None}
