@@ -121,9 +121,10 @@ def deploy_contracts(
         image=utils.DEPLOYMENT_UTILS_IMAGE,
         env_vars={
             "DEPLOYER_PRIVATE_KEY": priv_key,
-            "FUND_PRIVATE_KEY": ethereum_package_genesis_constants.PRE_FUNDED_ACCOUNTS[
-                19
-            ].private_key,
+            # "FUND_PRIVATE_KEY": ethereum_package_genesis_constants.PRE_FUNDED_ACCOUNTS[
+            #     19
+            # ].private_key,
+            "FUND_PRIVATE_KEY": priv_key,
             "FUND_VALUE": "10ether",
             "L1_NETWORK": str(l1_network),
         }
