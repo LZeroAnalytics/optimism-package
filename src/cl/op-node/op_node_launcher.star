@@ -164,7 +164,7 @@ def get_beacon_config(
         "--log.level=" + log_level,
         "--l2={0}".format(EXECUTION_ENGINE_ENDPOINT),
         "--l2.jwt-secret=" + ethereum_package_constants.JWT_MOUNT_PATH_ON_CONTAINER,
-        "--verifier.l1-confs=3",
+        "--verifier.l1-confs=1",
         "--rollup.config="
         + "{0}/rollup-{1}.json".format(
             ethereum_package_constants.GENESIS_DATA_MOUNTPOINT_ON_CLIENTS,
@@ -177,7 +177,7 @@ def get_beacon_config(
         "--l1.rpckind={0}".format(l1_config_env_vars["L1_RPC_KIND"]),
         "--l1.beacon={0}".format(l1_config_env_vars["CL_RPC_URL"]),
         "--l1.proof-window=10000",
-        "--p2p.advertise.ip=",
+        "--p2p.advertise.ip="
         + ethereum_package_constants.PRIVATE_IP_ADDRESS_PLACEHOLDER,
         "--p2p.advertise.tcp={0}".format(BEACON_DISCOVERY_PORT_NUM),
         "--p2p.advertise.udp={0}".format(BEACON_DISCOVERY_PORT_NUM),
@@ -284,7 +284,7 @@ def get_beacon_config(
             field="code",
             assertion="==",
             target_value=200,
-            timeout="5m",
+            timeout="1m",
         ),
         "tolerations": tolerations,
         "node_selectors": node_selectors,
