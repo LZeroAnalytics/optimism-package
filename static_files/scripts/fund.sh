@@ -33,7 +33,8 @@ for chain_id in "${chain_ids[@]}"; do
     role="${funded_roles[$index]}"
     role_idx=$((index+1))
 
-    private_key=$(cast wallet private-key "$mnemonic" "m/44'/60'/2'/$chain_id/$role_idx")
+    # private_key=$(cast wallet private-key "$mnemonic" "m/44'/60'/2'/$chain_id/$role_idx")
+    private_key=$FUND_PRIVATE_KEY
     address=$(cast wallet address "${private_key}")
     write_keyfile "${address}" "${private_key}" "${role}-$chain_id"
     send "${address}"
@@ -59,14 +60,15 @@ for chain_id in "${chain_ids[@]}"; do
 
   # Add the L1 and L2 faucet information to each chain's wallet data
   # Use chain 20 from the ethereum_package to prevent conflicts
+
   chain_wallets=$(echo "$chain_wallets" | jq \
-    --arg addr "0xafF0CA253b97e54440965855cec0A8a2E2399896" \
-    --arg private_key "0x04b9f63ecf84210c5366c66d68fa1f5da1fa4f634fad6dfc86178e4d79ff9e59" \
+    --arg addr "$deployer_addr" \
+    --arg private_key "$FUND_PRIVATE_KEY" \
     '.["l1FaucetPrivateKey"] = $private_key | .["l1FaucetAddress"] = $addr')
 
   chain_wallets=$(echo "$chain_wallets" | jq \
-    --arg addr "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" \
-    --arg private_key "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" \
+    --arg addr "$deployer_addr" \
+    --arg private_key "$FUND_PRIVATE_KEY" \
     '.["l2FaucetPrivateKey"] = $private_key | .["l2FaucetAddress"] = $addr')
 
   # Add this chain's wallet information to the main JSON object

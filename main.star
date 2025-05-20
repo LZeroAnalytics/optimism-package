@@ -1,4 +1,4 @@
-ethereum_package = import_module("github.com/ethpandaops/ethereum-package/main.star")
+ethereum_package = import_module("github.com/LZeroAnalytics/ethereum-package/main.star")
 contract_deployer = import_module("./src/contracts/contract_deployer.star")
 l2_launcher = import_module("./src/l2.star")
 superchain_launcher = import_module("./src/superchain/launcher.star")

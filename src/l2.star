@@ -1,5 +1,5 @@
 participant_network = import_module("./participant_network.star")
-blockscout = import_module("./blockscout/blockscout_launcher.star")
+blockscout = import_module("github.com/LZeroAnalytics/blockscout-package/main.star")
 da_server_launcher = import_module("./alt-da/da-server/da_server_launcher.star")
 contract_deployer = import_module("./contracts/contract_deployer.star")
 input_parser = import_module("./package_io/input_parser.star")
@@ -91,16 +91,63 @@ def launch_l2(
     for additional_service in l2_args.additional_services:
         if additional_service == "blockscout":
             plan.print("Launching op-blockscout")
-            blockscout.launch_blockscout(
-                plan,
-                l2_services_suffix,
-                l1_rpc_url,
-                all_el_contexts[0],  # first l2 EL url
-                network_params.name,
-                deployment_output,
-                network_params.network_id,
+            
+            # Get L2 RPC URL from the first participant's execution layer
+            l2_rpc_url = "http://{0}:{1}".format(
+                all_el_contexts[0].ip_addr,
+                all_el_contexts[0].rpc_port_num,
             )
+            
+            optimism_enabled = True  # Since this is an Optimism L2
+            
+            # Configure general arguments
+            general_args = {
+                "service_name_blockscout": "blockscout-{0}".format(l2_services_suffix),
+                "service_name_blockscout_verifier": "blockscout-verifier-{0}".format(l2_services_suffix),
+                "service_name_blockscout_frontend": "blockscout-frontend-{0}".format(l2_services_suffix),
+                "network_name": network_params.name,
+                "network_id": str(network_params.network_id),
+                "include_frontend": False
+            }
+            
+            ethereum_args = {}
+
+            rollup_filename = "rollup-{0}".format(str(network_params.network_id))
+            l1_deposit_start_block = util.read_network_config_value(
+                plan, deployment_output, rollup_filename, ".genesis.l1.number"
+            )
+            plan.print("l1_deposit_start_block")
+            plan.print(l1_deposit_start_block)
+
+            portal_address = util.read_network_config_value(
+                plan, deployment_output, rollup_filename, ".deposit_contract_address"
+            )
+            plan.print("portal_address")
+            plan.print(portal_address)
+            
+            # Configure Optimism arguments
+            optimism_args = {
+                "optimism_enabled": True,
+                "l1_rpc_url": l1_rpc_url,
+                "l2_rpc_url": l2_rpc_url,
+                "network_name": network_params.name,
+                "portal_address": portal_address, 
+                "l1_deposit_start_block": l1_deposit_start_block, 
+                "l1_withdrawals_start_block": l1_deposit_start_block,  
+                "output_oracle_address": "0x0000000000000000000000000000000000000000",  
+            }
+            
+            blockscout_output = blockscout.run(
+                plan,
+                general_args=general_args,
+                ethereum_args=ethereum_args,
+                optimism_args=optimism_args,
+                persistent=persistent,
+                node_selectors=global_node_selectors,
+            )
+            
             plan.print("Successfully launched op-blockscout")
+            plan.print("Blockscout URL: {0}".format(blockscout_output["blockscout_url"]))
         elif additional_service == "tx_fuzzer":
             plan.print("Launching transaction spammer")
             fuzz_target = "http://{0}:{1}".format(
