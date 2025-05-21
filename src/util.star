@@ -20,16 +20,6 @@ def read_json_value(plan, json_file, json_path, mounts=None):
     return run.output
 
 
-def read_file(plan, file_path, mounts=None):
-    run = plan.run_sh(
-        description="Read file",
-        image=DEPLOYMENT_UTILS_IMAGE,
-        files=mounts,
-        run="cat {0}".format(file_path),
-    )
-    return run.output
-
-
 def write_to_file(plan, contents, directory, file_name):
     file_path = "{0}/{1}".format(directory, file_name)
 
@@ -144,24 +134,3 @@ def make_execution_rpc_url(el_context):
         el_context.ip_addr,
         el_context.rpc_port_num,
     )
-
-
-# Removes all None values from a dictionary and returns a new dictionary.
-def filter_none(d):
-    return {k: v for k, v in d.items() if v != None}
-
-
-# Returns a list of duplicate items in the input list.
-def get_duplicates(items):
-    # Unfortunately kurotis star doesn't support sets so we'll have to do with O(N^2) complexity and a list
-    #
-    # The redeeming factor is the fact that we are dealing with very limited list sizes
-    seen = []
-    duplicates = []
-    for item in items:
-        if item in seen:
-            if item not in duplicates:
-                duplicates.append(item)
-        else:
-            seen.append(item)
-    return duplicates
