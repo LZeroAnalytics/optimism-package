@@ -102,9 +102,6 @@ def launch_l2(
             
             # Configure general arguments
             general_args = {
-                "service_name_blockscout": "blockscout-{0}".format(l2_services_suffix),
-                "service_name_blockscout_verifier": "blockscout-verifier-{0}".format(l2_services_suffix),
-                "service_name_blockscout_frontend": "blockscout-frontend-{0}".format(l2_services_suffix),
                 "network_name": network_params.name,
                 "network_id": str(network_params.network_id),
                 "include_frontend": False
