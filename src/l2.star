@@ -104,7 +104,6 @@ def launch_l2(
             general_args = {
                 "network_name": network_params.name,
                 "network_id": str(network_params.network_id),
-                "include_frontend": False
             }
             
             ethereum_args = {}
