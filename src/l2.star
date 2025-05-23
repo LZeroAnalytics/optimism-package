@@ -1,5 +1,5 @@
 participant_network = import_module("./participant_network.star")
-blockscout = import_module("github.com/LZeroAnalytics/blockscout-package/main.star")
+blockscout = import_module("github.com/LZeroAnalytics/blockscout-package@dev/main.star")
 da_server_launcher = import_module("./alt-da/da-server/da_server_launcher.star")
 contract_deployer = import_module("./contracts/contract_deployer.star")
 input_parser = import_module("./package_io/input_parser.star")
