@@ -79,6 +79,13 @@ def deploy_contracts(
     ]
     l2_chain_ids = ",".join(l2_chain_ids_list)
 
+    plan.run_sh(
+        name="op-deployer-cache-cleanup",
+        description="Clean op-deployer cache to avoid address conflicts",
+        image=optimism_args.op_contract_deployer_params.image,
+        run="rm -rf /var/cache/op-deployer/* || true"
+    )
+
     op_deployer_init = plan.run_sh(
         name="op-deployer-init",
         description="Initialize L2 contract deployments",
