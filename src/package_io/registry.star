@@ -60,6 +60,8 @@ _DEFAULT_IMAGES = {
     # TODO: update to use a versioned image when available
     # For now, we'll need users to pass the image explicitly
     OP_FAUCET: "",
+    # Extended faucet with USDC.e support
+    OP_FAUCET_EXTENDED: "",
     # Proxyd
     PROXYD: "us-docker.pkg.dev/oplabs-tools-artifacts/images/proxyd:v4.14.2",
     # Sidecar
