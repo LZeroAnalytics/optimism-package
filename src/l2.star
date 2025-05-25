@@ -31,6 +31,7 @@ def launch_l2(
     proposer_params = l2_args.proposer_params
     mev_params = l2_args.mev_params
     tx_fuzzer_params = l2_args.tx_fuzzer_params
+    blockscout_params = l2_args.blockscout_params
 
     plan.print("Deploying L2 with name {0}".format(network_params.name))
 
