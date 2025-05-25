@@ -437,6 +437,7 @@ def default_observability_params():
 def _default_faucet_params(registry):
     return {
         "enabled": False,
+        "usdc_enabled": False,
         "image": registry.get(_registry.OP_FAUCET),
     }
 

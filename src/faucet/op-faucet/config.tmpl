@@ -3,6 +3,7 @@ faucets:
   {{ .Name }}:
     el_rpc: "{{ .RPC }}"
     chain_id: {{ .ChainID }}
+    usdc_enabled: {{ .USDCEnabled }}
     tx_cfg:
       private_key: "{{ .PrivateKey }}"
   {{ end }}

@@ -76,6 +76,7 @@ def faucet_data(
     el_rpc,
     private_key,
     name=None,
+    usdc_enabled=False,
 ):
     """Constructor for a faucet data struct.
 
@@ -84,6 +85,7 @@ def faucet_data(
         el_rpc (str): The EL RPC the faucet will use.
         private_key (str): The private key of the underlying faucet wallet.
         name (str): The name of the faucet.
+        usdc_enabled (bool): Whether USDC.e transfers are enabled for this faucet.
     """
     if name == None:
         name = chain_id
@@ -94,4 +96,5 @@ def faucet_data(
         ChainID=chain_id,
         RPC=el_rpc,
         PrivateKey=private_key,
+        USDCEnabled=usdc_enabled,
     )

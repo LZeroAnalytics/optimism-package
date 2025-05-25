@@ -203,12 +203,30 @@ def _install_faucet(
     deployment_output,
     l2s,
 ):
+    # Determine if USDC.e support is enabled
+    usdc_enabled = faucet_params.usdc_enabled
+    
+    # Select the appropriate faucet image based on USDC.e support
+    faucet_image = faucet_params.image
+    if not faucet_image:
+        if usdc_enabled:
+            # Use extended op-faucet with USDC.e support
+            faucet_image = registry.get(_registry.OP_FAUCET_EXTENDED)
+            if not faucet_image:
+                # Fallback to default image if extended not configured
+                faucet_image = registry.get(_registry.OP_FAUCET)
+                plan.print("Warning: Using default op-faucet image without USDC.e support")
+        else:
+            # Use standard op-faucet
+            faucet_image = registry.get(_registry.OP_FAUCET)
+    
     faucets = [
         faucet.faucet_data(
             name="l1",
             chain_id=l1_config_env_vars["L1_CHAIN_ID"],
             el_rpc=l1_config_env_vars["L1_RPC_URL"],
             private_key=l1_priv_key,
+            usdc_enabled=usdc_enabled,
         ),
     ]
     for l2 in l2s:
@@ -226,12 +244,13 @@ def _install_faucet(
                 chain_id=chain_id,
                 el_rpc=l2.participants[0].el_context.rpc_http_url,
                 private_key=private_key,
+                usdc_enabled=usdc_enabled,
             )
         )
 
     faucet.launch(
         plan,
         "op-faucet",
-        faucet_params.image or registry.get(_registry.OP_FAUCET),
+        faucet_image,
         faucets,
     )

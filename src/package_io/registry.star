@@ -18,6 +18,7 @@ OP_SUPERVISOR = "op-supervisor"
 OP_PROPOSER = "op-proposer"
 OP_DEPLOYER = "op-deployer"
 OP_FAUCET = "op-faucet"
+OP_FAUCET_EXTENDED = "op-faucet-extended"
 
 PROXYD = "proxyd"
 
