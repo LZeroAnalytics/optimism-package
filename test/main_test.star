@@ -29,8 +29,8 @@ def test_multiple_chains(plan):
     expect.eq(
         cl_service_names,
         [
-            "op-cl-1000-1-op-node-op-geth-op-kurtosis",
-            "op-cl-2000-1-op-node-op-geth-op-kurtosis",
+            "op-cl-1000-1-op-node-op-geth",
+            "op-cl-2000-1-op-node-op-geth",
         ],
     )
 
@@ -40,7 +40,7 @@ def test_multiple_chains(plan):
     expect.eq(
         el_service_names,
         [
-            "op-el-1000-1-op-geth-op-node-op-kurtosis",
-            "op-el-2000-1-op-geth-op-node-op-kurtosis",
+            "op-el-1000-1-op-geth-op-node",
+            "op-el-2000-1-op-geth-op-node",
         ],
     )
