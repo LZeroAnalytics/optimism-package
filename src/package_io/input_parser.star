@@ -212,6 +212,10 @@ def input_parser(
                         "tx_fuzzer_extra_args"
                     ],
                 ),
+                blockscout_params=struct(
+                    backend_url=result.get("blockscout_params", {}).get("backend_url", ""),
+                    frontend_url=result.get("blockscout_params", {}).get("frontend_url", ""),
+                ),
             )
             for result in results["chains"]
         ],
@@ -378,6 +382,7 @@ def parse_network_params(plan, registry, input_args):
                 "additional_services", DEFAULT_ADDITIONAL_SERVICES
             ),
             "tx_fuzzer_params": tx_fuzzer_params,
+            "blockscout_params": chain.get("blockscout_params", {}),
         }
         chains.append(result)
 

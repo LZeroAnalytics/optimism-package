@@ -154,6 +154,10 @@ SUBCATEGORY_PARAMS = {
         "image",
         "tx_fuzzer_extra_args",
     ],
+    "blockscout_params": [
+        "backend_url",
+        "frontend_url",
+    ],
 }
 
 OP_CONTRACT_DEPLOYER_PARAMS = [

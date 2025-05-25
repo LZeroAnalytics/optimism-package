@@ -100,6 +100,8 @@ def launch_l2(
             
             optimism_enabled = True  # Since this is an Optimism L2
             
+            plan.print("Network name: {0}".format(network_params.name))
+            plan.print("Network id: {0}".format(network_params.network_id))
             # Configure general arguments
             general_args = {
                 "network_name": network_params.name,
@@ -107,6 +109,12 @@ def launch_l2(
                 "api_protocol": "https",
                 "ws_protocol": "wss",
             }
+
+            if blockscout_params.frontend_url and blockscout_params.backend_url:
+                plan.print("Using public backend URL: " + blockscout_params.backend_url)
+                general_args["app_host"] = blockscout_params.frontend_url
+                general_args["api_host"] = blockscout_params.backend_url
+
             
             ethereum_args = {}
 
