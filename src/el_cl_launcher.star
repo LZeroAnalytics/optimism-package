@@ -261,16 +261,10 @@ def launch(
             network_params.network_id, index_str, cl_type, el_type
         )
         el_builder_service_name = "op-el-builder-{0}-{1}-{2}-{3}".format(
-            network_params.network_id,
-            index_str,
-            el_builder_type,
-            cl_builder_type
+            network_params.network_id, index_str, el_builder_type, cl_builder_type
         )
         cl_builder_service_name = "op-cl-builder-{0}-{1}-{2}-{3}".format(
-            network_params.network_id,
-            index_str,
-            cl_builder_type,
-            el_builder_type
+            network_params.network_id, index_str, cl_builder_type, el_builder_type
         )
         sidecar_service_name = "op-rollup-boost-{0}-{1}".format(
             network_params.network_id, index_str

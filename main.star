@@ -205,7 +205,7 @@ def _install_faucet(
 ):
     # Determine if USDC.e support is enabled
     usdc_enabled = faucet_params.usdc_enabled
-    
+
     # Select the appropriate faucet image based on USDC.e support
     faucet_image = faucet_params.image
     if not faucet_image:
@@ -215,11 +215,13 @@ def _install_faucet(
             if not faucet_image:
                 # Fallback to default image if extended not configured
                 faucet_image = registry.get(_registry.OP_FAUCET)
-                plan.print("Warning: Using default op-faucet image without USDC.e support")
+                plan.print(
+                    "Warning: Using default op-faucet image without USDC.e support"
+                )
         else:
             # Use standard op-faucet
             faucet_image = registry.get(_registry.OP_FAUCET)
-    
+
     faucets = [
         faucet.faucet_data(
             name="l1",
