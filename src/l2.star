@@ -43,7 +43,7 @@ def launch_l2(
         plan.print("Launching da-server")
         da_server_context = da_server_launcher.launch_da_server(
             plan,
-            "da-server-{0}".format(l2_services_suffix),
+            "da-server",
             da_server_image,
             l2_args.da_server_params.cmd,
         )
@@ -98,7 +98,6 @@ def launch_l2(
                 all_el_contexts[0].ip_addr,
                 all_el_contexts[0].rpc_port_num,
             )
-            
             optimism_enabled = True  # Since this is an Optimism L2
             
             plan.print("Network name: {0}".format(network_params.name))

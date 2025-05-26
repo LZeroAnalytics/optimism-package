@@ -88,7 +88,7 @@ def launch_participant_network(
     )
     op_batcher_launcher.launch(
         plan,
-        "op-batcher-{0}".format(l2_services_suffix),
+        "op-batcher",
         batcher_params.image or registry.get(_registry.OP_BATCHER),
         all_el_contexts[0],
         all_cl_contexts[0],
@@ -114,7 +114,7 @@ def launch_participant_network(
     )
     op_proposer_launcher.launch(
         plan,
-        "op-proposer-{0}".format(l2_services_suffix),
+        "op-proposer",
         proposer_params.image or registry.get(_registry.OP_PROPOSER),
         all_cl_contexts[0],
         l1_config_env_vars,
