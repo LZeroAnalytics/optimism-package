@@ -530,7 +530,7 @@ def default_network_params():
     return {
         "network": constants.NETWORK_NAME,
         "network_id": "2151908",
-        "name": "op-kurtosis",
+        "name": "Bloctopus",
         "seconds_per_slot": 2,
         "fjord_time_offset": 0,
         "granite_time_offset": 0,

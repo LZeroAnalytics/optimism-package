@@ -1,4 +1,4 @@
-NETWORK_NAME = "kurtosis"
+NETWORK_NAME = "Bloctopus"
 
 HTTP_PORT_ID = "http"
 RPC_PORT_ID = "rpc"
