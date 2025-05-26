@@ -1,4 +1,4 @@
-NETWORK_NAME = "Bloctopus"
+NETWORK_NAME = "bloctopus"
 
 HTTP_PORT_ID = "http"
 RPC_PORT_ID = "rpc"
