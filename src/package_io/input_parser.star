@@ -214,8 +214,12 @@ def input_parser(
                     ],
                 ),
                 blockscout_params=struct(
-                    backend_url=result.get("blockscout_params", {}).get("backend_url", ""),
-                    frontend_url=result.get("blockscout_params", {}).get("frontend_url", ""),
+                    backend_url=result.get("blockscout_params", {}).get(
+                        "backend_url", ""
+                    ),
+                    frontend_url=result.get("blockscout_params", {}).get(
+                        "frontend_url", ""
+                    ),
                 ),
             )
             for result in results["chains"]
