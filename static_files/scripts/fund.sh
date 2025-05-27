@@ -37,10 +37,18 @@ if [ -n "$PREFUNDED_ACCOUNTS" ] && [ "$PREFUNDED_ACCOUNTS" != "{}" ]; then
         if [ "$address" != "null" ] && [ "$balance" != "null" ]; then
             echo "Funding $address with $balance on L1"
             
+            balance_wei=""
             if [[ $balance == *"ETH" ]]; then
                 balance_wei=$(cast --to-wei "${balance%ETH}")
+                echo "Converted balance: $balance_wei wei from ${balance%ETH} ETH"
             else
                 balance_wei="$balance"
+                echo "Using raw balance: $balance_wei wei"
+            fi
+            
+            if [ -z "$balance_wei" ]; then
+                echo "Error: Failed to convert balance to wei"
+                continue
             fi
             
             cast send "$address" \
@@ -117,9 +125,14 @@ echo "$wallets_json"
 if [ -n "$PREFUNDED_ACCOUNTS" ] && [ "$PREFUNDED_ACCOUNTS" != "{}" ]; then
     echo "Bridging prefunded accounts to L2..."
     for chain_id in "${chain_ids[@]}"; do
-        BRIDGE_ADDRESS=$(jq -r ".${chain_id}.l1BridgeAddress // empty" /network-data/wallets.json)
+        echo "Checking bridge address for chain $chain_id"
+        BRIDGE_ADDRESS=$(jq -r ".[\"${chain_id}\"].l1BridgeAddress // empty" /network-data/wallets.json)
+        echo "Retrieved bridge address: $BRIDGE_ADDRESS"
         if [ -n "$BRIDGE_ADDRESS" ] && [ "$BRIDGE_ADDRESS" != "null" ] && [ "$BRIDGE_ADDRESS" != "PLACEHOLDER_BRIDGE_ADDRESS" ]; then
+            echo "Bridging to L2 using bridge address: $BRIDGE_ADDRESS"
             bash /fund-script/bridge_l2.sh "$BRIDGE_ADDRESS" "$PREFUNDED_ACCOUNTS" "$FUND_PRIVATE_KEY"
+        else
+            echo "Skipping bridging for chain $chain_id - bridge address not available or still placeholder"
         fi
     done
 fi
