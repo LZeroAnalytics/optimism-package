@@ -36,6 +36,7 @@ optimism_package:
         fjord_time_offset: 0
         granite_time_offset: 0
         fund_dev_accounts: true
+        prefunded_accounts: {}
       batcher_params:
         extra_params: []
       mev_params:

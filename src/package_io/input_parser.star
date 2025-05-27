@@ -533,6 +533,7 @@ def default_network_params():
         "isthmus_time_offset": None,
         "interop_time_offset": None,
         "fund_dev_accounts": True,
+        "prefunded_accounts": {},
     }
 
 
