@@ -15,6 +15,7 @@ def test_op_challenger_launch_with_defaults(plan):
                 {
                     "network_params": {
                         "network_id": 1000,
+                        "prefunded_accounts": {},
                     },
                     "participants": [
                         {

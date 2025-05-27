@@ -10,11 +10,13 @@ def test_multiple_chains(plan):
                     {
                         "network_params": {
                             "network_id": "1000",
+                            "prefunded_accounts": {},
                         }
                     },
                     {
                         "network_params": {
                             "network_id": "2000",
+                            "prefunded_accounts": {},
                         }
                     },
                 ],

@@ -2,3 +2,5 @@ optimism_package:
   chains:
     - participants:
         - count: 2
+      network_params:
+        prefunded_accounts: {}

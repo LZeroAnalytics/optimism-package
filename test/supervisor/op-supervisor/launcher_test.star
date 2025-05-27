@@ -15,6 +15,7 @@ def test_interop_op_supervisor_ports(plan):
                 {
                     "network_params": {
                         "network_id": 1000,
+                        "prefunded_accounts": {},
                     },
                     "participants": [
                         {

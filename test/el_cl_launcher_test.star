@@ -39,7 +39,10 @@ def test_launch_with_defaults(plan):
                             "cl_type": "op-node",
                             "cl_image": "op-node:latest",
                         }
-                    ]
+                    ],
+                    "network_params": {
+                        "prefunded_accounts": {},
+                    },
                 }
             ],
         },
@@ -171,7 +174,10 @@ def test_launch_with_el_op_besu(plan):
                             "el_type": "op-besu",
                             "el_image": "op-besu:latest",
                         }
-                    ]
+                    ],
+                    "network_params": {
+                        "prefunded_accounts": {},
+                    },
                 }
             ]
         },
@@ -275,7 +281,10 @@ def test_launch_with_superchains(plan):
                             "cl_type": "op-node",
                             "cl_image": "op-node:latest",
                         }
-                    ]
+                    ],
+                    "network_params": {
+                        "prefunded_accounts": {},
+                    },
                 }
             ],
             "superchains": {"superchain0": {}},

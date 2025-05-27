@@ -31,6 +31,9 @@ def test_launch_with_defaults(plan):
                             "cl_image": "op-node:latest",
                         }
                     ],
+                    "network_params": {
+                        "prefunded_accounts": {},
+                    },
                     "additional_services": [
                         "tx_fuzzer",
                     ],
