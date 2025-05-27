@@ -1,5 +1,5 @@
 participant_network = import_module("./participant_network.star")
-blockscout = import_module("github.com/LZeroAnalytics/blockscout-package@dev/main.star")
+blockscout = import_module("github.com/LZeroAnalytics/blockscout-package/main.star")
 da_server_launcher = import_module("./alt-da/da-server/da_server_launcher.star")
 contract_deployer = import_module("./contracts/contract_deployer.star")
 input_parser = import_module("./package_io/input_parser.star")
@@ -31,7 +31,6 @@ def launch_l2(
     proposer_params = l2_args.proposer_params
     mev_params = l2_args.mev_params
     tx_fuzzer_params = l2_args.tx_fuzzer_params
-    blockscout_params = l2_args.blockscout_params
 
     plan.print("Deploying L2 with name {0}".format(network_params.name))
 
@@ -43,7 +42,7 @@ def launch_l2(
         plan.print("Launching da-server")
         da_server_context = da_server_launcher.launch_da_server(
             plan,
-            "da-server",
+            "da-server-{0}".format(l2_services_suffix),
             da_server_image,
             l2_args.da_server_params.cmd,
         )
@@ -92,30 +91,21 @@ def launch_l2(
     for additional_service in l2_args.additional_services:
         if additional_service == "blockscout":
             plan.print("Launching op-blockscout")
-            
+
             # Get L2 RPC URL from the first participant's execution layer
-            l2_rpc_url = "https://{0}:{1}".format(
+            l2_rpc_url = "http://{0}:{1}".format(
                 all_el_contexts[0].ip_addr,
                 all_el_contexts[0].rpc_port_num,
             )
+
             optimism_enabled = True  # Since this is an Optimism L2
-            
-            plan.print("Network name: {0}".format(network_params.name))
-            plan.print("Network id: {0}".format(network_params.network_id))
+
             # Configure general arguments
             general_args = {
                 "network_name": network_params.name,
                 "network_id": str(network_params.network_id),
-                "api_protocol": "https",
-                "ws_protocol": "wss",
             }
 
-            if blockscout_params.frontend_url and blockscout_params.backend_url:
-                plan.print("Using public backend URL: " + blockscout_params.backend_url)
-                general_args["app_host"] = blockscout_params.frontend_url
-                general_args["api_host"] = blockscout_params.backend_url
-
-            
             ethereum_args = {}
 
             rollup_filename = "rollup-{0}".format(str(network_params.network_id))
@@ -130,19 +120,19 @@ def launch_l2(
             )
             plan.print("portal_address")
             plan.print(portal_address)
-            
+
             # Configure Optimism arguments
             optimism_args = {
                 "optimism_enabled": True,
                 "l1_rpc_url": l1_rpc_url,
                 "l2_rpc_url": l2_rpc_url,
                 "network_name": network_params.name,
-                "portal_address": portal_address, 
-                "l1_deposit_start_block": l1_deposit_start_block, 
-                "l1_withdrawals_start_block": l1_deposit_start_block,  
-                "output_oracle_address": "0x0000000000000000000000000000000000000000",  
+                "portal_address": portal_address,
+                "l1_deposit_start_block": l1_deposit_start_block,
+                "l1_withdrawals_start_block": l1_deposit_start_block,
+                "output_oracle_address": "0x0000000000000000000000000000000000000000",
             }
-            
+
             blockscout_output = blockscout.run(
                 plan,
                 general_args=general_args,
@@ -151,9 +141,11 @@ def launch_l2(
                 persistent=persistent,
                 node_selectors=global_node_selectors,
             )
-            
+
             plan.print("Successfully launched op-blockscout")
-            plan.print("Blockscout URL: {0}".format(blockscout_output["blockscout_url"]))
+            plan.print(
+                "Blockscout URL: {0}".format(blockscout_output["blockscout_url"])
+            )
         elif additional_service == "tx_fuzzer":
             plan.print("Launching transaction spammer")
             fuzz_target = "http://{0}:{1}".format(

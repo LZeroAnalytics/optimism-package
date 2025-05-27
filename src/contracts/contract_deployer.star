@@ -79,13 +79,6 @@ def deploy_contracts(
     ]
     l2_chain_ids = ",".join(l2_chain_ids_list)
 
-    plan.run_sh(
-        name="op-deployer-cache-cleanup",
-        description="Clean op-deployer cache to avoid address conflicts",
-        image=optimism_args.op_contract_deployer_params.image,
-        run="rm -rf /var/cache/op-deployer/* || true"
-    )
-
     op_deployer_init = plan.run_sh(
         name="op-deployer-init",
         description="Initialize L2 contract deployments",
@@ -147,7 +140,10 @@ def deploy_contracts(
             "/network-data": op_deployer_init.files_artifacts[0],
             "/fund-script": fund_script_artifact,
         },
-        run='bash /fund-script/fund.sh "{0}"'.format(l2_chain_ids),
+        run="bash /fund-script/fund.sh \"{0}\" '{1}'".format(
+            l2_chain_ids,
+            json.encode(get_prefunded_accounts_for_chains(optimism_args.chains)),
+        ),
     )
 
     hardfork_schedule = []
@@ -331,6 +327,32 @@ def deploy_contracts(
         run=" && ".join(apply_cmds),
     )
 
+    # Update wallets.json with actual bridge addresses after contract deployment
+    plan.run_sh(
+        name="op-deployer-update-bridge-addresses",
+        description="Update wallets with L1StandardBridge addresses",
+        image=utils.DEPLOYMENT_UTILS_IMAGE,
+        env_vars=l1_config_env_vars,
+        store=[
+            StoreSpec(
+                src="/network-data",
+                name="op-deployer-configs",
+            )
+        ],
+        files={
+            "/network-data": op_deployer_output.files_artifacts[0],
+            "/fund-script": fund_script_artifact,
+        },
+        run=" && ".join(
+            [
+                "for chain_id in {0}; do".format(" ".join(l2_chain_ids_list)),
+                '  bridge_addr=$(jq -r ".opChainDeployments[] | select(.id==\\"0x$(printf \'%x\' $chain_id)\\") | .L1StandardBridgeProxy" /network-data/state.json)',
+                '  jq --arg chain_id "$chain_id" --arg bridge_addr "$bridge_addr" \'(.[$chain_id].l1BridgeAddress) = $bridge_addr\' /network-data/wallets.json > /tmp/wallets_updated.json && mv /tmp/wallets_updated.json /network-data/wallets.json',
+                "done",
+            ]
+        ),
+    )
+
     for chain in optimism_args.chains:
         plan.run_sh(
             name="op-deployer-generate-chainspec",
@@ -359,3 +381,14 @@ def chain_key(index, key):
 
 def read_chain_cmd(filename, l2_chain_id):
     return "`jq -r .address /network-data/{0}-{1}.json`".format(filename, l2_chain_id)
+
+
+def get_prefunded_accounts_for_chains(chains):
+    """Extract prefunded_accounts from the first chain that has them defined."""
+    for chain in chains:
+        if (
+            hasattr(chain.network_params, "prefunded_accounts")
+            and chain.network_params.prefunded_accounts
+        ):
+            return chain.network_params.prefunded_accounts
+    return {}
