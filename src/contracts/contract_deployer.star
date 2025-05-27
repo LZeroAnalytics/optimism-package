@@ -1,88 +1,28 @@
-ENVRC_PATH = "/workspace/optimism/.envrc"
-FACTORY_DEPLOYER_ADDRESS = "0x3fAB184622Dc19b6109349B94811493BF2a45362"
-FACTORY_ADDRESS = "0x4e59b44847b379578588920cA78FbF26c0B4956C"
-# raw tx data for deploying Create2Factory contract to L1
-FACTORY_DEPLOYER_CODE = "0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222"
-
-FUND_SCRIPT_FILEPATH = "../../static_files/scripts"
+#!/usr/bin/env starlark
 
 utils = import_module("../util.star")
-_filter = import_module("../util/filter.star")
 
-ethereum_package_genesis_constants = import_module(
-    "github.com/ethpandaops/ethereum-package/src/prelaunch_data_generator/genesis_constants/genesis_constants.star"
-)
-
-CANNED_VALUES = {
-    "eip1559Denominator": 50,
-    "eip1559DenominatorCanyon": 250,
-    "eip1559Elasticity": 6,
-}
-
-
-def _normalize_artifacts_locator(locator):
-    """Transform artifact locator from 'artifact://NAME' format to (name, file_path) pair.
-
-    If the locator doesn't use the artifact:// format, returns (None, original_locator).
-
-    Args:
-        locator: The original artifact locator string
-
-    Returns:
-        tuple: (artifact_name, normalized_locator, mount_point)
-    """
-    if locator and locator.startswith("artifact://"):
-        artifact_name = locator[len("artifact://") :]
-        mount_point = "/{0}".format(artifact_name)
-        return (artifact_name, "file://{0}".format(mount_point), mount_point)
-    return (None, locator, None)
-
-
-def _normalize_artifacts_locators(plan, l1_locator, l2_locator):
-    """Normalize artifact locators with specific mount points.
-
-    Args:
-        plan: The plan object
-        l1_locator: The L1 artifact locator
-        l2_locator: The L2 artifact locator
-
-    Returns:
-        tuple: (l1_artifacts_locator, l2_artifacts_locator, extra_files)
-    """
-    (
-        l1_artifact_name,
-        l1_artifacts_locator,
-        l1_mount_point,
-    ) = _normalize_artifacts_locator(l1_locator)
-    (
-        l2_artifact_name,
-        l2_artifacts_locator,
-        l2_mount_point,
-    ) = _normalize_artifacts_locator(l2_locator)
-
-    extra_files = {}
-    if l1_mount_point:
-        extra_files[l1_mount_point] = plan.get_files_artifact(name=l1_artifact_name)
-    if (
-        l2_mount_point and l2_mount_point not in extra_files
-    ):  # shortcut if both are the same
-        extra_files[l2_mount_point] = plan.get_files_artifact(name=l2_artifact_name)
-
-    return l1_artifacts_locator, l2_artifacts_locator, extra_files
+DEPLOYER_IMAGE = "us-docker.pkg.dev/oplabs-tools-artifacts/images/op-deployer:v0.4.0-rc.2"
 
 
 def deploy_contracts(
-    plan, priv_key, l1_config_env_vars, optimism_args, l1_network, altda_args
+    plan,
+    optimism_args,
+    l1_config_env_vars,
+    jwt_file,
+    fund_script_artifact,
 ):
-    l2_chain_ids_list = [
-        str(chain.network_params.network_id) for chain in optimism_args.chains
-    ]
-    l2_chain_ids = ",".join(l2_chain_ids_list)
+    l2_chain_ids = []
+    l2_chain_ids_list = []
+    for chain in optimism_args.chains:
+        l2_chain_ids.append(str(chain.network_params.network_id))
+        l2_chain_ids_list.append(str(chain.network_params.network_id))
 
+    # Initialize the deployer
     op_deployer_init = plan.run_sh(
         name="op-deployer-init",
-        description="Initialize L2 contract deployments",
-        image=optimism_args.op_contract_deployer_params.image,
+        description="Initialize the deployer",
+        image=DEPLOYER_IMAGE,
         env_vars=l1_config_env_vars,
         store=[
             StoreSpec(
@@ -90,46 +30,15 @@ def deploy_contracts(
                 name="op-deployer-configs",
             )
         ],
-        run=" && ".join(
-            [
-                "mkdir -p /network-data",
-                "op-deployer init --intent-config-type custom --l1-chain-id $L1_CHAIN_ID --l2-chain-ids {0} --workdir /network-data".format(
-                    l2_chain_ids
-                ),
-            ]
-        ),
+        run="op-deployer init --l1-rpc-url $L1_RPC_URL --l1-deployer-key $DEPLOYER_PRIVATE_KEY --l1-funder-key $FUND_PRIVATE_KEY --outdir /network-data",
     )
 
-    # Normalize artifact locators with specific mount points
-    (
-        l1_artifacts_locator,
-        l2_artifacts_locator,
-        contracts_extra_files,
-    ) = _normalize_artifacts_locators(
-        plan,
-        optimism_args.op_contract_deployer_params.l1_artifacts_locator,
-        optimism_args.op_contract_deployer_params.l2_artifacts_locator,
-    )
-
-    fund_script_artifact = plan.upload_files(
-        src=FUND_SCRIPT_FILEPATH,
-        name="op-deployer-fund-script",
-    )
-
-    plan.run_sh(
-        name="op-deployer-fund",
-        description="Collect keys, and fund addresses",
-        image=utils.DEPLOYMENT_UTILS_IMAGE,
-        env_vars={
-            "DEPLOYER_PRIVATE_KEY": priv_key,
-            # "FUND_PRIVATE_KEY": ethereum_package_genesis_constants.PRE_FUNDED_ACCOUNTS[
-            #     19
-            # ].private_key,
-            "FUND_PRIVATE_KEY": priv_key,
-            "FUND_VALUE": "10ether",
-            "L1_NETWORK": str(l1_network),
-        }
-        | l1_config_env_vars,
+    # Generate the config
+    op_deployer_config = plan.run_sh(
+        name="op-deployer-config",
+        description="Generate the config",
+        image=DEPLOYER_IMAGE,
+        env_vars=l1_config_env_vars,
         store=[
             StoreSpec(
                 src="/network-data",
@@ -138,194 +47,116 @@ def deploy_contracts(
         ],
         files={
             "/network-data": op_deployer_init.files_artifacts[0],
+            "/jwt": jwt_file,
+        },
+        run="op-deployer config --l1-rpc-url $L1_RPC_URL --l1-deployer-key $DEPLOYER_PRIVATE_KEY --l1-funder-key $FUND_PRIVATE_KEY --outdir /network-data --l2-chain-id {0} --l2-blocktime 2 --l2-jwt-secret /jwt/jwtsecret --l2-engine-sync-enabled true --l2-genesis-timestamp $(date +%s) --l2-genesis-delay 0".format(
+            ",".join(l2_chain_ids)
+        ),
+    )
+
+    # Deploy the contracts
+    op_deployer_output = plan.run_sh(
+        name="op-deployer-deploy",
+        description="Deploy the contracts",
+        image=DEPLOYER_IMAGE,
+        env_vars=l1_config_env_vars,
+        store=[
+            StoreSpec(
+                src="/network-data",
+                name="op-deployer-configs",
+            )
+        ],
+        files={
+            "/network-data": op_deployer_config.files_artifacts[0],
+            "/jwt": jwt_file,
+        },
+        run="op-deployer deploy --l1-rpc-url $L1_RPC_URL --l1-deployer-key $DEPLOYER_PRIVATE_KEY --l1-funder-key $FUND_PRIVATE_KEY --outdir /network-data",
+    )
+
+    # Fund the accounts
+    plan.run_sh(
+        name="op-deployer-fund",
+        description="Fund the accounts",
+        image=utils.DEPLOYMENT_UTILS_IMAGE,
+        env_vars=l1_config_env_vars,
+        store=[
+            StoreSpec(
+                src="/network-data",
+                name="op-deployer-configs",
+            )
+        ],
+        files={
+            "/network-data": op_deployer_output.files_artifacts[0],
             "/fund-script": fund_script_artifact,
         },
         run="bash /fund-script/fund.sh \"{0}\" '{1}'".format(
-            l2_chain_ids,
+            ",".join(l2_chain_ids),
             json.encode(get_prefunded_accounts_for_chains(optimism_args.chains)),
         ),
     )
 
     hardfork_schedule = []
-    for index, chain in enumerate(optimism_args.chains):
-        np = chain.network_params
-
-        # rename each hardfork to the name the override expects
-        renames = (
-            ("l2GenesisFjordTimeOffset", np.fjord_time_offset),
-            ("l2GenesisGraniteTimeOffset", np.granite_time_offset),
-            ("l2GenesisHoloceneTimeOffset", np.holocene_time_offset),
-            ("l2GenesisIsthmusTimeOffset", np.isthmus_time_offset),
-            ("l2GenesisInteropTimeOffset", np.interop_time_offset),
-        )
-
-        # only include the hardforks that have been activated since
-        # toml does not support null values
-        for fork_key, activation_timestamp in renames:
-            if activation_timestamp != None:
-                hardfork_schedule.append((index, fork_key, activation_timestamp))
-
-    intent = {
-        # TODO At the moment, we assume that if there are any superchains defined, we'll need to deploy interop contracts
-        # We'll need to update the op-deployer logic to better suit the interop scenario
-        "useInterop": len(optimism_args.superchains) > 0,
-        "l1ContractsLocator": l1_artifacts_locator,
-        "l2ContractsLocator": l2_artifacts_locator,
-        "superchainRoles": {
-            "superchainGuardian": read_chain_cmd("l1ProxyAdmin", l2_chain_ids_list[0]),
-            "protocolVersionsOwner": read_chain_cmd(
-                "l1ProxyAdmin", l2_chain_ids_list[0]
-            ),
-            "superchainProxyAdminOwner": read_chain_cmd(
-                "l1ProxyAdmin", l2_chain_ids_list[0]
-            ),
-        },
-        "chains": [],
-    }
-
-    absolute_prestate = ""
-    if (
-        "faultGameAbsolutePrestate"
-        in optimism_args.op_contract_deployer_params.overrides
-    ):
-        absolute_prestate = optimism_args.op_contract_deployer_params.overrides[
-            "faultGameAbsolutePrestate"
-        ]
-        intent["globalDeployOverrides"] = {
-            "dangerouslyAllowCustomDisputeParameters": True,
-            "faultGameAbsolutePrestate": absolute_prestate,
-        }
-
-    overrides = _filter.remove_none(optimism_args.op_contract_deployer_params.overrides)
-    vm_type = overrides.get("vmType", "CANNON")
-
-    for i, chain in enumerate(optimism_args.chains):
-        chain_id = str(chain.network_params.network_id)
-        intent_chain = dict(CANNED_VALUES)
-        intent_chain.update(
-            {
-                "deployOverrides": {
-                    "l2BlockTime": chain.network_params.seconds_per_slot,
-                    "fundDevAccounts": (
-                        True if chain.network_params.fund_dev_accounts else False
-                    ),
-                },
-                "baseFeeVaultRecipient": read_chain_cmd(
-                    "baseFeeVaultRecipient", chain_id
-                ),
-                "l1FeeVaultRecipient": read_chain_cmd("l1FeeVaultRecipient", chain_id),
-                "sequencerFeeVaultRecipient": read_chain_cmd(
-                    "sequencerFeeVaultRecipient", chain_id
-                ),
-                "roles": {
-                    "batcher": read_chain_cmd("batcher", chain_id),
-                    "challenger": read_chain_cmd("challenger", chain_id),
-                    "l1ProxyAdminOwner": read_chain_cmd("l1ProxyAdmin", chain_id),
-                    "l2ProxyAdminOwner": read_chain_cmd("l2ProxyAdmin", chain_id),
-                    "proposer": read_chain_cmd("proposer", chain_id),
-                    "systemConfigOwner": read_chain_cmd("systemConfigOwner", chain_id),
-                    "unsafeBlockSigner": read_chain_cmd("sequencer", chain_id),
-                },
-                "dangerousAdditionalDisputeGames": [
-                    {
-                        "respectedGameType": 0,
-                        "faultGameAbsolutePrestate": absolute_prestate,
-                        "faultGameMaxDepth": 73,
-                        "faultGameSplitDepth": 30,
-                        "faultGameClockExtension": 10800,
-                        "faultGameMaxClockDuration": 302400,
-                        "dangerouslyAllowCustomDisputeParameters": True,
-                        "vmType": vm_type,
-                        "useCustomOracle": False,
-                        "oracleMinProposalSize": 0,
-                        "oracleChallengePeriodSeconds": 0,
-                        "makeRespected": False,
-                    }
-                ],
-                "dangerousAltDAConfig": {
-                    "useAltDA": altda_args.use_altda,
-                    "daCommitmentType": altda_args.da_commitment_type,
-                    "daChallengeWindow": altda_args.da_challenge_window,
-                    "daResolveWindow": altda_args.da_resolve_window,
-                    "daBondSize": altda_args.da_bond_size,
-                },
-            }
-        )
-        for index, fork_key, activation_timestamp in hardfork_schedule:
-            intent_chain["deployOverrides"][fork_key] = "0x%x" % activation_timestamp
-        intent["chains"].append(intent_chain)
-
-    intent_json = json.encode(intent)
-    intent_json_artifact = utils.write_to_file(plan, intent_json, "/tmp", "intent.json")
-
-    op_deployer_configure = plan.run_sh(
-        name="op-deployer-configure",
-        description="Configure L2 contract deployments",
-        image=utils.DEPLOYMENT_UTILS_IMAGE,
-        store=[
-            StoreSpec(
-                src="/network-data",
-                name="op-deployer-configs",
-            )
-        ],
-        files={
-            "/network-data": op_deployer_init.files_artifacts[0],
-            "/tmp": intent_json_artifact,
-        },
-        run=" && ".join(
-            [
-                # zhwrd: this mess is temporary until we implement json reading for op-deployer intent file
-                # convert intent_json to yaml. this is necessary because its unreliable to evaluate command substitutions in json.
-                """cat /tmp/intent.json | dasel -r json -w yaml > /network-data/intent.yaml""",
-                # evaluate the command substitutions
-                "eval \"echo '$(cat /network-data/intent.yaml)'\" | dasel -r yaml -w json > /network-data/intent-b.json",
-                # convert op-deployer generated intent.toml to json
-                "dasel -r toml -w json -f /network-data/intent.toml > /network-data/intent-a.json",
-                # merge the two intent.json files, ensuring that the chains array is merged correctly
-                "jq -s 'add + {chains: map(.chains) | transpose | map(add)}' /network-data/intent-a.json /network-data/intent-b.json > /network-data/intent-merged.json",
-                # convert the merged intent.json back to toml
-                "cat /network-data/intent-merged.json | dasel -r json -w toml > /network-data/intent.toml",
-            ]
-        ),
-    )
-
-    apply_cmds = [
-        "op-deployer apply --l1-rpc-url $L1_RPC_URL --private-key $PRIVATE_KEY --workdir /network-data",
-    ]
     for chain in optimism_args.chains:
-        network_id = chain.network_params.network_id
-        apply_cmds.extend(
-            [
-                "op-deployer inspect genesis --workdir /network-data --outfile /network-data/genesis-{0}.json {0}".format(
-                    network_id
-                ),
-                "op-deployer inspect rollup --workdir /network-data --outfile /network-data/rollup-{0}.json {0}".format(
-                    network_id
-                ),
-            ]
-        )
-
-    op_deployer_output = plan.run_sh(
-        name="op-deployer-apply",
-        description="Apply L2 contract deployments",
-        image=optimism_args.op_contract_deployer_params.image,
-        env_vars={
-            "PRIVATE_KEY": str(priv_key),
-            "DEPLOYER_CACHE_DIR": "/var/cache/op-deployer",
-        }
-        | l1_config_env_vars,
-        store=[
-            StoreSpec(
-                src="/network-data",
-                name="op-deployer-configs",
+        if (
+            hasattr(chain.network_params, "prague_time_offset")
+            and chain.network_params.prague_time_offset != 0
+        ):
+            hardfork_schedule.append(
+                {
+                    "chain_id": chain.network_params.network_id,
+                    "hardfork": "prague",
+                    "time_offset": chain.network_params.prague_time_offset,
+                }
             )
-        ],
-        files={
-            "/network-data": op_deployer_configure.files_artifacts[0],
-        }
-        | contracts_extra_files,
-        run=" && ".join(apply_cmds),
-    )
+        if (
+            hasattr(chain.network_params, "fjord_time_offset")
+            and chain.network_params.fjord_time_offset != 0
+        ):
+            hardfork_schedule.append(
+                {
+                    "chain_id": chain.network_params.network_id,
+                    "hardfork": "fjord",
+                    "time_offset": chain.network_params.fjord_time_offset,
+                }
+            )
+        if (
+            hasattr(chain.network_params, "granite_time_offset")
+            and chain.network_params.granite_time_offset != 0
+        ):
+            hardfork_schedule.append(
+                {
+                    "chain_id": chain.network_params.network_id,
+                    "hardfork": "granite",
+                    "time_offset": chain.network_params.granite_time_offset,
+                }
+            )
+
+    if len(hardfork_schedule) > 0:
+        apply_cmds = []
+        for hardfork in hardfork_schedule:
+            apply_cmds.append(
+                "op-deployer apply-hardfork --l1-rpc-url $L1_RPC_URL --l1-deployer-key $DEPLOYER_PRIVATE_KEY --l1-funder-key $FUND_PRIVATE_KEY --outdir /network-data --l2-chain-id {0} --hardfork {1} --time-offset {2}".format(
+                    hardfork["chain_id"], hardfork["hardfork"], hardfork["time_offset"]
+                )
+            )
+
+        plan.run_sh(
+            name="op-deployer-apply-hardfork",
+            description="Apply hardfork",
+            image=DEPLOYER_IMAGE,
+            env_vars=l1_config_env_vars,
+            store=[
+                StoreSpec(
+                    src="/network-data",
+                    name="op-deployer-configs",
+                )
+            ],
+            files={
+                "/network-data": op_deployer_output.files_artifacts[0],
+                "/jwt": jwt_file,
+            },
+            run=" && ".join(apply_cmds),
+        )
 
     # Update wallets.json with actual bridge addresses after contract deployment
     plan.run_sh(
@@ -344,9 +175,19 @@ def deploy_contracts(
             "/fund-script": fund_script_artifact,
         },
         run="""for chain_id in {0}; do
-  bridge_addr=$(jq -r ".opChainDeployments[] | select(.id==\\"0x$(printf '%x' $chain_id)\\") | .L1StandardBridgeProxy" /network-data/state.json)
-  jq --arg chain_id "$chain_id" --arg bridge_addr "$bridge_addr" '(.[$chain_id].l1BridgeAddress) = $bridge_addr' /network-data/wallets.json > /tmp/wallets_updated.json
-  mv /tmp/wallets_updated.json /network-data/wallets.json
+  echo "Updating bridge address for chain $chain_id"
+  hex_chain_id=$(printf '0x%064x' $chain_id)
+  echo "Chain ID in hex format: $hex_chain_id"
+  bridge_addr=$(jq -r '.opChainDeployments[] | select(.id=="'$hex_chain_id'") | .L1StandardBridgeProxy' /network-data/state.json)
+  echo "Retrieved bridge address: $bridge_addr"
+  if [ -n "$bridge_addr" ] && [ "$bridge_addr" != "null" ]; then
+    echo "Updating wallets.json with bridge address: $bridge_addr for chain $chain_id"
+    jq --arg chain_id "$chain_id" --arg bridge_addr "$bridge_addr" '(.[$chain_id].l1BridgeAddress) = $bridge_addr' /network-data/wallets.json > /tmp/wallets_updated.json
+    mv /tmp/wallets_updated.json /network-data/wallets.json
+    cat /network-data/wallets.json | grep l1BridgeAddress
+  else
+    echo "Warning: Could not find bridge address for chain $chain_id"
+  fi
 done""".format(" ".join(l2_chain_ids_list)),
     )
 
