@@ -254,19 +254,19 @@ def launch(
             index + 1, len(str(len(participants)))
         )
 
-        el_service_name = "op-el-{0}-{1}-{2}-{3}".format(
+        el_service_name = "op-el-{0}-{1}-{2}-{3}-op-kurtosis".format(
             network_params.network_id, index_str, el_type, cl_type
         )
-        cl_service_name = "op-cl-{0}-{1}-{2}-{3}".format(
+        cl_service_name = "op-cl-{0}-{1}-{2}-{3}-op-kurtosis".format(
             network_params.network_id, index_str, cl_type, el_type
         )
-        el_builder_service_name = "op-el-builder-{0}-{1}-{2}-{3}".format(
+        el_builder_service_name = "op-el-builder-{0}-{1}-{2}-{3}-op-kurtosis".format(
             network_params.network_id, index_str, el_builder_type, cl_builder_type
         )
-        cl_builder_service_name = "op-cl-builder-{0}-{1}-{2}-{3}".format(
+        cl_builder_service_name = "op-cl-builder-{0}-{1}-{2}-{3}-op-kurtosis".format(
             network_params.network_id, index_str, cl_builder_type, el_builder_type
         )
-        sidecar_service_name = "op-rollup-boost-{0}-{1}".format(
+        sidecar_service_name = "op-rollup-boost-{0}-{1}-op-kurtosis".format(
             network_params.network_id, index_str
         )
 

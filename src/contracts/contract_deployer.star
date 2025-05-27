@@ -347,7 +347,8 @@ def deploy_contracts(
             [
                 "for chain_id in {0}; do".format(" ".join(l2_chain_ids_list)),
                 '  bridge_addr=$(jq -r ".opChainDeployments[] | select(.id==\\"0x$(printf \'%x\' $chain_id)\\") | .L1StandardBridgeProxy" /network-data/state.json)',
-                '  jq --arg chain_id "$chain_id" --arg bridge_addr "$bridge_addr" \'(.[$chain_id].l1BridgeAddress) = $bridge_addr\' /network-data/wallets.json > /tmp/wallets_updated.json && mv /tmp/wallets_updated.json /network-data/wallets.json',
+                '  jq --arg chain_id "$chain_id" --arg bridge_addr "$bridge_addr" \'(.[$chain_id].l1BridgeAddress) = $bridge_addr\' /network-data/wallets.json > /tmp/wallets_updated.json',
+                "  mv /tmp/wallets_updated.json /network-data/wallets.json",
                 "done",
             ]
         ),
