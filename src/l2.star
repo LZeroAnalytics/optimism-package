@@ -88,6 +88,42 @@ def launch_l2(
             network_id_as_hex
         ),
     )
+    plan.print("Raw l1_bridge_address: {0}".format(l1_bridge_address))
+
+    # Debug logging for prefunded accounts
+    plan.print("Checking prefunded accounts configuration...")
+    plan.print("Has prefunded_accounts attribute: {0}".format(hasattr(network_params, "prefunded_accounts")))
+
+    if hasattr(network_params, "prefunded_accounts") and network_params.prefunded_accounts:
+        plan.print("Bridging prefunded accounts to L2...")
+        fund_script_artifact = plan.upload_files(
+            src="../static_files/scripts",
+            name="bridge-l2-script",
+        )
+        
+        prefunded_accounts = json.decode(network_params.prefunded_accounts)
+        plan.print("Prefunded accounts: {0}".format(prefunded_accounts))
+       
+        plan.run_sh(
+            name="bridge-prefunded-accounts",
+            description="Bridge prefunded accounts to L2",
+            image=util.DEPLOYMENT_UTILS_IMAGE,
+            env_vars={
+                "L1_RPC_URL": l1_rpc_url,
+                "FUND_PRIVATE_KEY": l1_priv_key,
+            },
+            files={
+                "/fund-script": fund_script_artifact,
+            },
+            run="bash /fund-script/bridge_l2.sh \"{0}\" '{1}' \"{2}\"".format(
+                l1_bridge_address,
+                prefunded_accounts,
+                l1_priv_key,
+            ),
+        )
+        plan.print("Successfully bridged prefunded accounts to L2")
+    else:
+        plan.print("Skipping bridging step - no prefunded accounts configured")
 
     for additional_service in l2_args.additional_services:
         if additional_service == "blockscout":
@@ -154,6 +190,19 @@ def launch_l2(
             
             plan.print("Successfully launched op-blockscout")
             plan.print("Blockscout URL: {0}".format(blockscout_output["blockscout_url"]))
+        # if additional_service == "blockscout":
+        #     plan.print("Launching op-blockscout")
+        #     blockscout.launch_blockscout(
+        #         plan,
+        #         l2_services_suffix,
+        #         l1_rpc_url,
+        #         all_el_contexts[0],  # first l2 EL url
+        #         network_params.name,
+        #         deployment_output,
+        #         network_params.network_id,
+        #     )
+        #     plan.print("Successfully launched op-blockscout")
+        
         elif additional_service == "tx_fuzzer":
             plan.print("Launching transaction spammer")
             fuzz_target = "http://{0}:{1}".format(
@@ -175,5 +224,4 @@ def launch_l2(
             l1_bridge_address
         )
     )
-
     return l2

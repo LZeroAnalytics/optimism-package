@@ -26,22 +26,21 @@ optimism_package:
         node_selectors: {}
         tolerations: []
         count: 1
-      - el_type: op-reth
-        cl_type: op-node
       network_params:
-        network: "kurtosis"
+        network: "bloctopus"
         network_id: "2151908"
         seconds_per_slot: 2
-        name: "op-kurtosis"
+        name: "op-bloctopus"
         fjord_time_offset: 0
         granite_time_offset: 0
         fund_dev_accounts: true
+        prefunded_accounts: '{"0xFc75A4D593e0619DD41cCa80AcD4f6De95660303": {"balance": "1ETH"}}'
       batcher_params:
         extra_params: []
       mev_params:
         builder_host: ""
         builder_port: ""
-      additional_services: []
+      additional_services: [blockscout]
       tx_fuzzer_params:
         tx_fuzzer_extra_args: []
   op_contract_deployer_params:
@@ -52,19 +51,19 @@ optimism_package:
   global_node_selectors: {}
   global_tolerations: []
   persistent: false
-  challengers:
-    challenger0: &x-challenger
-      participants: "*"
-      cannon_trace_types: ["super-cannon", "super-permissioned"]
-    challenger1:
-      <<: *x-challenger
-  superchains:
-    superchain0:
-  supervisors:
-    supervisor0: &x-supervisor
-      superchain: superchain0
-    supervisor1:
-      <<: *x-supervisor
+  challengers: {}
+    # challenger0: &x-challenger
+    #   participants: "*"
+    #   cannon_trace_types: ["super-cannon", "super-permissioned"]
+    # challenger1:
+    #   <<: *x-challenger
+  superchains: {}
+    # superchain0:
+  supervisors: {}
+    # supervisor0: &x-supervisor
+    #   superchain: superchain0
+    # supervisor1:
+    #   <<: *x-supervisor
 ethereum_package:
   participants:
   - el_type: geth
