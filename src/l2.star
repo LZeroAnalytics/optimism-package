@@ -94,7 +94,7 @@ def launch_l2(
             plan.print("Launching op-blockscout")
             
             # Get L2 RPC URL from the first participant's execution layer
-            l2_rpc_url = "https://{0}:{1}".format(
+            l2_rpc_url = "http://{0}:{1}".format(
                 all_el_contexts[0].ip_addr,
                 all_el_contexts[0].rpc_port_num,
             )
@@ -106,8 +106,8 @@ def launch_l2(
             general_args = {
                 "network_name": network_params.name,
                 "network_id": str(network_params.network_id),
-                "api_protocol": "https",
-                "ws_protocol": "wss",
+                # "api_protocol": "https",
+                # "ws_protocol": "wss",
             }
 
             if blockscout_params.frontend_url and blockscout_params.backend_url:
