@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+# set -euo pipefail
 
 export ETH_RPC_URL="$L1_RPC_URL"
 
