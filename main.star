@@ -94,6 +94,9 @@ def run(plan, args={}):
         plan.print("Waiting for L1 to start up")
         wait_for_sync.wait_for_startup(plan, l1_config_env_vars)
 
+    plan.print("L1 private key")
+    plan.print(l1_priv_key)
+
     deployment_output = contract_deployer.deploy_contracts(
         plan,
         l1_priv_key,

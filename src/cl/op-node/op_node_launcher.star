@@ -164,7 +164,8 @@ def get_beacon_config(
         "--log.level=" + log_level,
         "--l2={0}".format(EXECUTION_ENGINE_ENDPOINT),
         "--l2.jwt-secret=" + ethereum_package_constants.JWT_MOUNT_PATH_ON_CONTAINER,
-        "--verifier.l1-confs=1",
+        "--verifier.l1-confs=4",
+        "--l1.trustrpc",
         "--rollup.config="
         + "{0}/rollup-{1}.json".format(
             ethereum_package_constants.GENESIS_DATA_MOUNTPOINT_ON_CLIENTS,
