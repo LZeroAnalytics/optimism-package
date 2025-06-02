@@ -34,7 +34,9 @@ optimism_package:
         fjord_time_offset: 0
         granite_time_offset: 0
         fund_dev_accounts: true
-        prefunded_accounts: '{"0xFc75A4D593e0619DD41cCa80AcD4f6De95660303": {"balance": "1ETH"}}'
+        prefunded_accounts: '{"0x103cF66B8273DC51Ac9a04a2E746fe87c0B4d328": {"balance": "1ETH"}}'
+        faucet_params:
+          private_key: 1cdxxxxxxx
       batcher_params:
         extra_params: []
       mev_params:

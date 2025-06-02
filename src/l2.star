@@ -94,19 +94,70 @@ def launch_l2(
     plan.print("Checking prefunded accounts configuration...")
     plan.print("Has prefunded_accounts attribute: {0}".format(hasattr(network_params, "prefunded_accounts")))
 
+    fund_script_artifact = plan.upload_files(
+        src="../static_files/scripts",
+        name="bridge-l2-script",
+    )
+
     if hasattr(network_params, "prefunded_accounts") and network_params.prefunded_accounts:
         plan.print("Bridging prefunded accounts to L2...")
-        fund_script_artifact = plan.upload_files(
-            src="../static_files/scripts",
-            name="bridge-l2-script",
-        )
         
         prefunded_accounts = json.decode(network_params.prefunded_accounts)
         plan.print("Prefunded accounts: {0}".format(prefunded_accounts))
-       
+
+        plan.print("rpc url for l1")
+        plan.print(l1_rpc_url)
+
+        # Iterate through each prefunded account
+        for address, details in prefunded_accounts.items():
+            balance = details["balance"]
+            plan.print("Bridging {0} to address {1}".format(balance, address))
+            plan.run_sh(
+                name="bridge-prefunded-account-{}".format(address),
+                description="Bridge prefunded account to L2",
+                image=util.DEPLOYMENT_UTILS_IMAGE,
+                env_vars={
+                    "L1_RPC_URL": l1_rpc_url,
+                    "FUND_PRIVATE_KEY": l1_priv_key,
+                },
+                files={
+                    "/fund-script": fund_script_artifact,
+                },
+                run="bash /fund-script/bridge_l2.sh \"{0}\" \"{1}\" \"{2}\" \"{3}\"".format(
+                    l1_bridge_address,
+                    address,
+                    balance,
+                    l1_priv_key,
+                ),
+            )
+        plan.print("Successfully bridged all prefunded accounts to L2")
+    else:
+        plan.print("Skipping bridging step - no prefunded accounts configured")
+
+    if hasattr(l2_args.network_params, "faucet_params"):
+        plan.print("Faucet params: {0}".format(l2_args.network_params.faucet_params))
+        faucet_private_key = l2_args.network_params.faucet_params["private_key"]
+        plan.print("Faucet private key: {0}".format(faucet_private_key))
+        
+        # Use cast to derive address from private key
+        faucet_address = plan.run_sh(
+            name="derive-faucet-address",
+            description="Derive faucet address from private key",
+            image=util.DEPLOYMENT_UTILS_IMAGE,
+            run="cast wallet address --private-key {}".format(faucet_private_key),
+        )
+        plan.print("Faucet address: {0}".format(faucet_address))
+
+        # Bridge funds to faucet address
+        plan.print("Bridging funds to faucet address...")
+        # fund_script_artifact = plan.upload_files(
+        #     src="../static_files/scripts",
+        #     name="bridge-l2-script",
+        # )
+        
         plan.run_sh(
-            name="bridge-prefunded-accounts",
-            description="Bridge prefunded accounts to L2",
+            name="bridge-faucet-account",
+            description="Bridge funds to faucet address",
             image=util.DEPLOYMENT_UTILS_IMAGE,
             env_vars={
                 "L1_RPC_URL": l1_rpc_url,
@@ -115,15 +166,16 @@ def launch_l2(
             files={
                 "/fund-script": fund_script_artifact,
             },
-            run="bash /fund-script/bridge_l2.sh \"{0}\" '{1}' \"{2}\"".format(
+            run="bash /fund-script/bridge_l2.sh \"{0}\" \"{1}\" \"{2}\" \"{3}\"".format(
                 l1_bridge_address,
-                prefunded_accounts,
+                faucet_address,
+                "1ETH",
                 l1_priv_key,
             ),
         )
-        plan.print("Successfully bridged prefunded accounts to L2")
+        plan.print("Successfully bridged funds to faucet address")
     else:
-        plan.print("Skipping bridging step - no prefunded accounts configured")
+        plan.print("Skipping faucet setup - no faucet params configured")
 
     for additional_service in l2_args.additional_services:
         if additional_service == "blockscout":

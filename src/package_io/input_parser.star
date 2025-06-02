@@ -181,6 +181,7 @@ def input_parser(
                     interop_time_offset=result["network_params"]["interop_time_offset"],
                     fund_dev_accounts=result["network_params"]["fund_dev_accounts"],
                     prefunded_accounts=result["network_params"]["prefunded_accounts"],
+                    faucet_params=result["network_params"]["faucet_params"],
                 ),
                 proxyd_params=struct(
                     image=result["proxyd_params"]["image"],
@@ -539,7 +540,8 @@ def default_network_params():
         "isthmus_time_offset": None,
         "interop_time_offset": None,
         "fund_dev_accounts": True,
-        "prefunded_accounts": [],  
+        "prefunded_accounts": [],
+        "faucet_params": {},
     }
 
 
