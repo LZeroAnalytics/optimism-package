@@ -103,7 +103,6 @@ def launch_l2(
         plan.print("Bridging prefunded accounts to L2...")
         
         prefunded_accounts = json.decode(network_params.prefunded_accounts)
-        plan.print("Prefunded accounts: {0}".format(prefunded_accounts))
 
         plan.print("rpc url for l1")
         plan.print(l1_rpc_url)
@@ -113,7 +112,7 @@ def launch_l2(
             balance = details["balance"]
             plan.print("Bridging {0} to address {1}".format(balance, address))
             plan.run_sh(
-                name="bridge-prefunded-account-{}".format(address),
+                name="bridge-l2-account",
                 description="Bridge prefunded account to L2",
                 image=util.DEPLOYMENT_UTILS_IMAGE,
                 env_vars={
