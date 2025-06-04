@@ -133,49 +133,48 @@ def launch_l2(
     else:
         plan.print("Skipping bridging step - no prefunded accounts configured")
 
-    # if hasattr(l2_args.network_params, "faucet_params"):
-    #     plan.print("Faucet params: {0}".format(l2_args.network_params.faucet_params))
-    #     # Parse faucet_params if it's a string
-    #     faucet_params = json.decode(str(l2_args.network_params.faucet_params))
+    if hasattr(l2_args.network_params, "faucet_params"):
+        plan.print("Faucet params: {0}".format(l2_args.network_params.faucet_params))
+        faucet_params = json.decode(str(l2_args.network_params.faucet_params))
        
-    #     if "private_key" in faucet_params:
-    #         faucet_private_key = faucet_params["private_key"]
-    #         plan.print("Faucet private key: {0}".format(faucet_private_key))
+        if "private_key" in faucet_params:
+            faucet_private_key = faucet_params["private_key"]
+            plan.print("Faucet private key: {0}".format(faucet_private_key))
             
-    #         # Use cast to derive address from private key
-    #         faucet_address = plan.run_sh(
-    #             name="derive-faucet-address",
-    #             description="Derive faucet address from private key",
-    #             image=util.DEPLOYMENT_UTILS_IMAGE,
-    #             run="cast wallet address --private-key {}".format(faucet_private_key),
-    #         )
-    #         plan.print("Faucet address: {0}".format(faucet_address))
+            faucet_address = plan.run_sh(
+                name="derive-faucet-address",
+                description="Derive faucet address from private key",
+                image=util.DEPLOYMENT_UTILS_IMAGE,
+                run="cast wallet address --private-key {}".format(faucet_private_key),
+            )
+            faucet_address = faucet_address.output.strip()
+            plan.print("Faucet address: {0}".format(faucet_address))
 
-    #         # Bridge funds to faucet address
-    #         plan.print("Bridging funds to faucet address...")
-    #         plan.run_sh(
-    #             name="bridge-faucet-account",
-    #             description="Bridge funds to faucet address",
-    #             image=util.DEPLOYMENT_UTILS_IMAGE,
-    #             env_vars={
-    #                 "L1_RPC_URL": l1_rpc_url,
-    #                 "FUND_PRIVATE_KEY": l1_priv_key,
-    #             },
-    #             files={
-    #                 "/fund-script": fund_script_artifact,
-    #             },
-    #             run="bash /fund-script/bridge_l2.sh \"{0}\" \"{1}\" \"{2}\" \"{3}\"".format(
-    #                 l1_bridge_address,
-    #                 faucet_address,
-    #                 "1ETH",
-    #                 l1_priv_key,
-    #             ),
-    #         )
-    #         plan.print("Successfully bridged funds to faucet address")
-    #     else:
-    #         plan.print("No private key found in faucet params")
-    # else:
-    #     plan.print("Skipping faucet setup - no faucet params configured")
+            # Bridge funds to faucet address
+            plan.print("Bridging funds to faucet address...")
+            plan.run_sh(
+                name="bridge-faucet-account",
+                description="Bridge funds to faucet address",
+                image=util.DEPLOYMENT_UTILS_IMAGE,
+                env_vars={
+                    "L1_RPC_URL": l1_rpc_url,
+                    "FUND_PRIVATE_KEY": l1_priv_key,
+                },
+                files={
+                    "/fund-script": fund_script_artifact,
+                },
+                run="bash /fund-script/bridge_l2.sh \"{0}\" \"{1}\" \"{2}\" \"{3}\"".format(
+                    l1_bridge_address,
+                    faucet_address,
+                    "10000ETH",
+                    l1_priv_key,
+                ),
+            )
+            plan.print("Successfully bridged funds to faucet address")
+        else:
+            plan.print("No private key found in faucet params")
+    else:
+        plan.print("Skipping faucet setup - no faucet params configured")
 
     for additional_service in l2_args.additional_services:
         if additional_service == "blockscout":
@@ -277,3 +276,4 @@ def launch_l2(
         )
     )
     return l2
+

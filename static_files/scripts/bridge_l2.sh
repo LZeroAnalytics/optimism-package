@@ -5,11 +5,10 @@
 BRIDGE_ADDRESS="$1"
 ADDRESS="$2"
 BALANCE="$3"
-PRIVATE_KEY="$4"
+PRIVATE_KEY=bcdf20249abf0ed6d944c0288fad489e33f66b3960d9e6229c1cd214ed3bbe31
 
 echo "ADDRESS: $ADDRESS"
 echo "BALANCE: $BALANCE"
-echo "PRIVATE_KEY: $PRIVATE_KEY"
 echo "BRIDGE_ADDRESS: $BRIDGE_ADDRESS"
 echo "L1 RPC URL: $L1_RPC_URL"
 
@@ -40,11 +39,18 @@ if [ "$ADDRESS" != "null" ] && [ "$BALANCE" != "null" ]; then
     echo "TIMESTAMP: $TIMESTAMP"
 
     SALT_BYTES="0x$(cast --to-bytes32 "${TIMESTAMP}" | cut -c 3-)"
-    echo $SALT_BYTES
+    echo "$SALT_BYTES"
+
+    FORMATTED_ADDRESS=$(echo "$ADDRESS" | tr '[:upper:]' '[:lower:]')
+    if [[ ! $FORMATTED_ADDRESS =~ ^0x[a-f0-9]{40}$ ]]; then
+        echo "Error: Invalid Ethereum address format"
+        exit 1
+    fi
+    echo "Formatted address: $FORMATTED_ADDRESS"
 
     TX_RESPONSE=$(cast send "$BRIDGE_ADDRESS" \
         "depositETHTo(address,uint32,bytes)" \
-        "$ADDRESS" \
+        "$FORMATTED_ADDRESS" \
         "200000" \
         "$SALT_BYTES" \
         --value "$balance_wei" \
@@ -54,7 +60,7 @@ if [ "$ADDRESS" != "null" ] && [ "$BALANCE" != "null" ]; then
         --json \
         --rpc-url "$L1_RPC_URL")
 
-    echo "Raw transaction response: $TX_RESPONSE"
+    # echo "Raw transaction response: $TX_RESPONSE"
 
     if echo "$TX_RESPONSE" | jq -e 'has("transactionHash")' > /dev/null 2>&1; then
         TX_HASH=$(echo "$TX_RESPONSE" | jq -r '.transactionHash')
