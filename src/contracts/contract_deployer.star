@@ -79,13 +79,6 @@ def deploy_contracts(
     ]
     l2_chain_ids = ",".join(l2_chain_ids_list)
 
-    plan.run_sh(
-        name="op-deployer-cache-cleanup",
-        description="Clean op-deployer cache to avoid address conflicts",
-        image=optimism_args.op_contract_deployer_params.image,
-        run="rm -rf /var/cache/op-deployer/* || true"
-    )
-
     op_deployer_init = plan.run_sh(
         name="op-deployer-init",
         description="Initialize L2 contract deployments",
@@ -106,6 +99,31 @@ def deploy_contracts(
             ]
         ),
     )
+
+    # Check if contracts are already deployed
+#     check_deployed = plan.run_sh(
+#         name="check-contracts-deployed",
+#         description="Check if contracts are already deployed",
+#         image=utils.DEPLOYMENT_UTILS_IMAGE,
+#         env_vars=l1_config_env_vars,
+#         files={
+#             "/network-data": op_deployer_init.files_artifacts[0],
+#         },
+#         run="""#!/bin/sh
+# BRIDGE_PROXY=`jq -r '.opChainDeployments[0].L1StandardBridgeProxy' /network-data/state.json 2>/dev/null || echo "null"`
+# OUTPUT_ORACLE=`jq -r '.opChainDeployments[0].L2OutputOracleProxy' /network-data/state.json 2>/dev/null || echo "null"`
+# SYSTEM_CONFIG=`jq -r '.opChainDeployments[0].SystemConfigProxy' /network-data/state.json 2>/dev/null || echo "null"`
+# echo "BRIDGE: $BRIDGE_PROXY"
+# echo "ORACLE: $OUTPUT_ORACLE"
+# echo "SYSTEM_CONFIG: $SYSTEM_CONFIG"
+# """,
+#     )
+    
+#     if "null" not in check_deployed.output:
+#         plan.print("All contracts are already deployed, skipping deployment step")
+#         return op_deployer_init.files_artifacts[0]
+
+#     plan.print("Contracts not found or incomplete, proceeding with deployment...")
 
     # Normalize artifact locators with specific mount points
     (
@@ -292,6 +310,38 @@ def deploy_contracts(
             ]
         ),
     )
+
+    # Upload the check script
+    check_script_artifact = plan.upload_files(
+        src="../../static_files/scripts/check_contracts.sh",
+        name="check-contracts-script",
+    )
+
+    # Check if contracts exist
+    check_contracts = plan.run_sh(
+        name="check-contracts-exist",
+        description="Check if contracts are already deployed",
+        image=utils.DEPLOYMENT_UTILS_IMAGE,
+        store=[
+            StoreSpec(
+                src="/network-data",
+                name="op-deployer-configs",
+            )
+        ],
+        files={
+            "/network-data": op_deployer_configure.files_artifacts[0],
+            "/check-script": check_script_artifact,
+        },
+        run="chmod +x /check-script/check_contracts.sh && /check-script/check_contracts.sh '{0}'".format(l2_chain_ids),
+    )
+
+    
+    if "true" in check_contracts.output:
+        plan.print("Contracts already exist, skipping deployment")
+        return op_deployer_configure.files_artifacts[0]
+    else:
+        plan.print("Contracts not found, proceeding with deployment...")
+
 
     apply_cmds = [
         "op-deployer apply --l1-rpc-url $L1_RPC_URL --private-key $PRIVATE_KEY --workdir /network-data",
